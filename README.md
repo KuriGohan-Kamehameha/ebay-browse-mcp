@@ -174,6 +174,27 @@ ebay-browse-mcp/
 
 `evaluation.xml` contains 10 read-only questions designed for LLM evaluation harnesses. Questions target stable response properties (shape, field values, filter behaviour) rather than specific listings, because eBay inventory changes constantly. Each question has a single verifiable string answer.
 
+## Comparison with similar projects
+
+Three open-source eBay MCP servers exist as of mid-2026. They target different use cases. Pick the one that fits yours:
+
+| | **ebay-browse-mcp** (this) | [YosefHayim/ebay-mcp](https://github.com/YosefHayim/ebay-mcp) | [CooKey-Monster/EbayMcpServer](https://github.com/CooKey-Monster/EbayMcpServer) |
+| --- | --- | --- | --- |
+| **Best for** | Buyers: searching public listings | Sellers: managing inventory, orders, ads | Minimal auction listing |
+| **eBay API** | Browse API (buyer-side) | Sell APIs (seller-side) | Browse API, single endpoint |
+| **Tools** | 1 (`search_ebay`) with filters, sort, pagination | 325 tools, 100% Sell API coverage | 1 (`list_auction`) |
+| **Language** | Python | TypeScript / Node 18+ | Python (uv) |
+| **Setup** | venv + pip + `.env` | `npm install -g ebay-mcp` + interactive wizard | `uv pip install` |
+| **Auth** | Client credentials | Client credentials + user OAuth (refresh tokens, 10k-50k req/day) | Client credentials |
+| **Active maintenance** | Yes | Yes (frequent releases) | No (2 commits, stale) |
+| **Footprint** | ~190 lines of code | 30+ files, src/api + src/tools + src/auth + scripts | ~5 files |
+
+**Pick `ebay-browse-mcp` (this project) if:** you want an LLM to search eBay listings with filters (price range, condition, location, sort), with minimal setup and a small surface area. The goal is a focused tool that does one thing well.
+
+**Pick YosefHayim/ebay-mcp if:** you run an eBay store and want an LLM to manage your inventory, fulfil orders, run marketing campaigns, or pull analytics. It is the most complete Sell-API integration available.
+
+**Pick CooKey-Monster/EbayMcpServer if:** you want the absolute minimum dependency footprint and only need a single keyword lookup. Note that the repo has not been updated for over a year as of mid-2026.
+
 ## License
 
 MIT
