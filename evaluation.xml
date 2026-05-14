@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Evaluation suite for ebay-browse-mcp.
+
+  Questions are designed around STABLE properties of the tool (response shape,
+  filter behaviour, marketplace selection), not specific eBay listings, because
+  listings change minute-to-minute. The harness should run each question through
+  an LLM with the MCP server attached, then compare the LLM's final answer to
+  the expected string.
+-->
+<evaluation>
+
+  <qa_pair>
+    <question>Call search_ebay with query "iphone" and limit 1. What is the value of the "marketplace" field in the response?</question>
+    <answer>EBAY_GB</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "iphone" and limit 1. What is the value of the "environment" field in the response (assuming the server is configured for production)?</question>
+    <answer>production</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "macbook" and limit 5. How many items are in the "items" array of the response?</question>
+    <answer>5</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "macbook" and limit 3. Each item in the "items" array should have a "currency" field. For the EBAY_GB marketplace, what currency code is returned?</question>
+    <answer>GBP</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "macbook pro" and limit 10. The response contains a "query" field that echoes the input. What is its value?</question>
+    <answer>macbook pro</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "tesla model 3 floor mats", limit 5, and filter_expr "itemLocationCountry:GB". Every item in the response should have the same "item_location". What is that two-letter country code?</question>
+    <answer>GB</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "laptop", limit 5, filter_expr "price:[100..500],priceCurrency:GBP", and sort "price". The first item's price should be less than or equal to the last item's price. Is the result sorted ascending by price? Answer yes or no.</question>
+    <answer>yes</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "rolex", limit 3, filter_expr "conditions:{NEW}". All returned items should have the same "condition" value. What is that value?</question>
+    <answer>New</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "playstation 5" and limit 2. The "returned" field reports how many items were actually returned. Should this value equal the length of the "items" array? Answer yes or no.</question>
+    <answer>yes</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "asdfqwerzxcvunlikelynonexistentterm99887766" and limit 5. The expected behaviour is that no items are found. What is the value of the "returned" field?</question>
+    <answer>0</answer>
+  </qa_pair>
+
+</evaluation>
