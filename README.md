@@ -5,7 +5,7 @@
 [![MCP](https://img.shields.io/badge/MCP-1.27+-green.svg)](https://modelcontextprotocol.io)
 [![eBay Browse API](https://img.shields.io/badge/eBay-Browse%20API-e53238.svg)](https://developer.ebay.com/api-docs/buy/browse/overview.html)
 
-Minimal MCP server for searching eBay listings via the [Browse API](https://developer.ebay.com/api-docs/buy/browse/overview.html). Designed to plug into Claude Desktop (or any MCP host) so an LLM can run searches on your behalf.
+Minimal MCP server for searching eBay listings via the [Browse API](https://developer.ebay.com/api-docs/buy/browse/overview.html). Communicates over stdio JSON-RPC, so it works with any MCP-compatible host (Claude Desktop, Claude Code, Cursor, VS Code Copilot, Cline, Continue, Zed, Windsurf, LM Studio, Goose, and others).
 
 ## Features
 
@@ -60,9 +60,16 @@ Switching environments is a one-line change to `.env`. The credentials for each 
 
 Expected output: a list of items with title, price, and URL.
 
-## Register with Claude Desktop
+## Register with your MCP host
 
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json` and add the server to the `mcpServers` block:
+The server speaks stdio JSON-RPC. Add it to your host's MCP configuration with two values:
+
+- **command**: absolute path to the venv Python (`/absolute/path/to/ebay-browse-mcp/.venv/bin/python`)
+- **args**: `["/absolute/path/to/ebay-browse-mcp/server.py"]`
+
+### Claude Desktop / Claude Code / Cursor / Windsurf / LM Studio / Cherry Studio / Goose
+
+These hosts share the `mcpServers` JSON shape. Add the block below to the relevant config file and restart the host.
 
 ```json
 {
@@ -77,7 +84,56 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` and add t
 }
 ```
 
-Restart Claude Desktop. The tool `search_ebay` becomes available.
+Config file locations:
+
+| Host | Path |
+| --- | --- |
+| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Cursor (global) | `~/.cursor/mcp.json` |
+| Cursor (per project) | `.cursor/mcp.json` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+| Claude Code | `claude mcp add ebay-browse /absolute/path/to/.venv/bin/python /absolute/path/to/server.py` (CLI) |
+
+### VS Code Copilot
+
+VS Code uses `servers` (not `mcpServers`) under the `mcp` section of `settings.json`:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "ebay-browse": {
+        "command": "/absolute/path/to/ebay-browse-mcp/.venv/bin/python",
+        "args": ["/absolute/path/to/ebay-browse-mcp/server.py"]
+      }
+    }
+  }
+}
+```
+
+### Zed
+
+Zed uses `context_servers` in `~/.config/zed/settings.json`:
+
+```json
+{
+  "context_servers": {
+    "ebay-browse": {
+      "command": {
+        "path": "/absolute/path/to/ebay-browse-mcp/.venv/bin/python",
+        "args": ["/absolute/path/to/ebay-browse-mcp/server.py"]
+      }
+    }
+  }
+}
+```
+
+### Continue, Cline and others
+
+Continue (`~/.continue/config.json`) uses an `mcpServers` array; Cline uses `cline_mcp_settings.json` with the same shape as Claude Desktop. Check your host's documentation for the exact file path. The command and args are always the same.
+
+Once registered, restart the host and the `search_ebay` tool becomes available.
 
 ## Tool: `search_ebay`
 

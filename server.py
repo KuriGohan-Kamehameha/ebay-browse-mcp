@@ -1,4 +1,8 @@
-"""eBay Browse API MCP server. Exposes one tool: search_ebay."""
+"""eBay Browse API MCP server. Exposes one tool: search_ebay.
+
+Works with any MCP-compatible host (Claude Desktop, Cursor, VS Code Copilot,
+Cline, Continue, Zed, Windsurf, LM Studio, Goose, etc).
+"""
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
