@@ -26,8 +26,8 @@ python3 -m venv .venv
 ## Configure
 
 1. Create an eBay developer account at https://developer.ebay.com
-2. Generate an Application Keyset (sandbox or production)
-3. Enable OAuth for that keyset on the eBay developer portal
+2. Generate an Application Keyset (both sandbox and production keysets are available)
+3. Enable OAuth for the keyset on the eBay developer portal
 4. Copy `.env.example` to `.env` and fill in your credentials:
 
 ```bash
@@ -42,7 +42,15 @@ EBAY_MARKETPLACE=EBAY_GB
 EBAY_ENV=sandbox
 ```
 
-> Production keysets require eBay's marketplace account deletion notification setup. If you don't store eBay user data (e.g. you only do public search), apply for the exemption on the developer portal.
+### Sandbox vs production
+
+- **`EBAY_ENV=sandbox`** routes requests to `api.sandbox.ebay.com`. Sandbox listings are synthetic test data, not real inventory. Start here to verify your OAuth flow and integration end-to-end with no approval friction.
+- **`EBAY_ENV=production`** routes to `api.ebay.com` and returns real eBay listings. To use production you must:
+  1. Use the production keyset credentials (different `CLIENT_ID` and `CLIENT_SECRET` than sandbox)
+  2. Comply with eBay's [marketplace account deletion notification](https://developer.ebay.com/marketplace-account-deletion) process, or apply for an exemption if you do not store eBay user data
+  3. Enable OAuth on the production keyset
+
+Switching environments is a one-line change to `.env`. The credentials for each environment are separate and not interchangeable.
 
 ## Test the client directly
 
