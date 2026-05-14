@@ -60,4 +60,14 @@
     <answer>0</answer>
   </qa_pair>
 
+  <qa_pair>
+    <question>Call search_ebay with query "iphone" and limit 1. Take the "item_id" from the first item. Then call get_item_details with that item_id. The response should contain an "item_id" field. Should it match the item_id you passed in? Answer yes or no.</question>
+    <answer>yes</answer>
+  </qa_pair>
+
+  <qa_pair>
+    <question>Call search_ebay with query "iphone" and limit 1. Take the item_id from the first item and pass it to get_item_details. The response contains an "images" field. Is the type of this field a list (array)? Answer yes or no.</question>
+    <answer>yes</answer>
+  </qa_pair>
+
 </evaluation>

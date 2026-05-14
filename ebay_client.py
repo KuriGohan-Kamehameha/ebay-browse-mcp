@@ -23,6 +23,7 @@ else:
 
 TOKEN_URL = f"{BASE}/identity/v1/oauth2/token"
 SEARCH_URL = f"{BASE}/buy/browse/v1/item_summary/search"
+ITEM_URL = f"{BASE}/buy/browse/v1/item"
 
 # In-memory token cache (process-local)
 _token_cache = {"value": None, "expires_at": 0.0}
@@ -106,17 +107,77 @@ def search_items(
     return response.json()
 
 
+def get_item(item_id: str, fieldgroups: Optional[str] = None) -> dict:
+    """Retrieve full details of a specific eBay item via the Browse API.
+
+    Args:
+        item_id: REST item identifier returned by search_items in the
+            "itemId" field (format: "v1|<numeric>|0"). Legacy numeric
+            IDs are not accepted by this endpoint.
+        fieldgroups: Optional response shaping. One of:
+            - None (default): full item details
+            - "COMPACT": minimal subset useful for change detection
+              (price, availability, revision id, top-rated status)
+            - "PRODUCT": default plus product catalogue information
+
+    Returns:
+        Raw Browse API response dict for the item.
+    """
+    # item_id contains the "|" character which must be URL encoded; let
+    # requests handle that by passing item_id through the path.
+    url = f"{ITEM_URL}/{requests.utils.quote(item_id, safe='')}"
+    params = {}
+    if fieldgroups:
+        params["fieldgroups"] = fieldgroups
+
+    token = _get_access_token()
+    response = requests.get(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "X-EBAY-C-MARKETPLACE-ID": MARKETPLACE,
+            "Content-Type": "application/json",
+        },
+        params=params,
+        timeout=15,
+    )
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"getItem failed ({response.status_code}): {response.text[:500]}"
+        )
+    return response.json()
+
+
 if __name__ == "__main__":
     import sys
 
-    q = sys.argv[1] if len(sys.argv) > 1 else "iphone"
-    print(f"[env: {ENV}, marketplace: {MARKETPLACE}]")
-    print(f"Searching: {q}\n")
-    result = search_items(q, limit=3)
-    print(f"Total: {result.get('total', 0)}")
-    print(f"Returned: {len(result.get('itemSummaries', []))}\n")
-    for item in result.get("itemSummaries", []):
-        price = item.get("price", {})
-        print(f"- {item.get('title', '')[:80]}")
-        print(f"  {price.get('value', '?')} {price.get('currency', '?')}")
-        print(f"  {item.get('itemWebUrl', '')}\n")
+    # Usage:
+    #   python ebay_client.py "<query>"                    -> search
+    #   python ebay_client.py item "<item_id>"             -> get item
+    if len(sys.argv) > 2 and sys.argv[1] == "item":
+        item_id = sys.argv[2]
+        print(f"[env: {ENV}, marketplace: {MARKETPLACE}]")
+        print(f"Fetching item: {item_id}\n")
+        result = get_item(item_id)
+        print(f"Title: {result.get('title', '')[:120]}")
+        price = result.get("price", {})
+        print(f"Price: {price.get('value', '?')} {price.get('currency', '?')}")
+        print(f"Condition: {result.get('condition', '?')}")
+        seller = result.get("seller", {})
+        print(f"Seller: {seller.get('username', '?')} "
+              f"({seller.get('feedbackPercentage', '?')}%, "
+              f"{seller.get('feedbackScore', '?')} feedback)")
+        print(f"Web URL: {result.get('itemWebUrl', '')}")
+    else:
+        q = sys.argv[1] if len(sys.argv) > 1 else "iphone"
+        print(f"[env: {ENV}, marketplace: {MARKETPLACE}]")
+        print(f"Searching: {q}\n")
+        result = search_items(q, limit=3)
+        print(f"Total: {result.get('total', 0)}")
+        print(f"Returned: {len(result.get('itemSummaries', []))}\n")
+        for item in result.get("itemSummaries", []):
+            price = item.get("price", {})
+            print(f"- {item.get('title', '')[:80]}")
+            print(f"  itemId: {item.get('itemId', '?')}")
+            print(f"  {price.get('value', '?')} {price.get('currency', '?')}")
+            print(f"  {item.get('itemWebUrl', '')}\n")

@@ -9,7 +9,7 @@ Minimal MCP server for searching eBay listings via the [Browse API](https://deve
 
 ## Features
 
-- One tool: `search_ebay` (keyword, filters, sort, pagination via limit)
+- Two tools: `search_ebay` (keyword, filters, sort, pagination) and `get_item_details` (full item record by ID)
 - OAuth 2.0 client credentials flow, token cached in memory
 - Sandbox or production via a single env var
 - Pure Python, no framework lock-in beyond the official MCP SDK
@@ -133,7 +133,7 @@ Zed uses `context_servers` in `~/.config/zed/settings.json`:
 
 Continue (`~/.continue/config.json`) uses an `mcpServers` array; Cline uses `cline_mcp_settings.json` with the same shape as Claude Desktop. Check your host's documentation for the exact file path. The command and args are always the same.
 
-Once registered, restart the host and the `search_ebay` tool becomes available.
+Once registered, restart the host and the `search_ebay` and `get_item_details` tools become available.
 
 ## Tool: `search_ebay`
 
@@ -143,6 +143,8 @@ Once registered, restart the host and the `search_ebay` tool becomes available.
 | `limit` | integer | no (default 10) | Number of results, 1-200 |
 | `filter_expr` | string | no | Browse API filter syntax, see below |
 | `sort` | string | no | `price`, `-price`, `newlyListed`, `endingSoonest` |
+
+Returns a list of items. Each item includes an `item_id` field (format `v1|<numeric>|0`) that can be passed to `get_item_details` for the full record.
 
 ### Filter examples
 
@@ -156,6 +158,17 @@ Once registered, restart the host and the `search_ebay` tool becomes available.
 Combine with commas: `price:[800..3500],priceCurrency:GBP,itemLocationCountry:GB`.
 
 Full reference: https://developer.ebay.com/api-docs/buy/static/ref-buy-browse-filters.html
+
+## Tool: `get_item_details`
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `item_id` | string | yes | REST item ID from `search_ebay`, format `v1|<numeric>|0` |
+| `fieldgroups` | string | no | `COMPACT` (price/availability only), `PRODUCT` (default plus product catalogue), or omit for full details |
+
+Returns the full item record: title, description, item specifics (aspects), all images, condition, brand, MPN, category path, buying options, availability, seller details, item location, shipping options with estimated delivery dates, and return terms.
+
+Typical chain: an LLM calls `search_ebay` to find candidates, then `get_item_details` on the promising ones to read full descriptions or shipping costs before recommending.
 
 ## Project structure
 
@@ -182,7 +195,7 @@ Three open-source eBay MCP servers exist as of mid-2026. They target different u
 | --- | --- | --- | --- |
 | **Best for** | Buyers: searching public listings | Sellers: managing inventory, orders, ads | Minimal auction listing |
 | **eBay API** | Browse API (buyer-side) | Sell APIs (seller-side) | Browse API, single endpoint |
-| **Tools** | 1 (`search_ebay`) with filters, sort, pagination | 325 tools, 100% Sell API coverage | 1 (`list_auction`) |
+| **Tools** | 2 (`search_ebay`, `get_item_details`) with filters, sort, pagination | 325 tools, 100% Sell API coverage | 1 (`list_auction`) |
 | **Language** | Python | TypeScript / Node 18+ | Python (uv) |
 | **Setup** | venv + pip + `.env` | `npm install -g ebay-mcp` + interactive wizard | `uv pip install` |
 | **Auth** | Client credentials | Client credentials + user OAuth (refresh tokens, 10k-50k req/day) | Client credentials |
