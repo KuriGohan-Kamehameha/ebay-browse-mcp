@@ -1,5 +1,10 @@
 # ebay-browse-mcp
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![MCP](https://img.shields.io/badge/MCP-1.27+-green.svg)](https://modelcontextprotocol.io)
+[![eBay Browse API](https://img.shields.io/badge/eBay-Browse%20API-e53238.svg)](https://developer.ebay.com/api-docs/buy/browse/overview.html)
+
 Minimal MCP server for searching eBay listings via the [Browse API](https://developer.ebay.com/api-docs/buy/browse/overview.html). Designed to plug into Claude Desktop (or any MCP host) so an LLM can run searches on your behalf.
 
 ## Features
@@ -96,9 +101,14 @@ ebay-browse-mcp/
 ├── .gitignore
 ├── README.md
 ├── requirements.txt
+├── evaluation.xml       10 read-only LLM eval questions
 ├── ebay_client.py       Browse API client (no MCP dependency)
 └── server.py            FastMCP server, wraps ebay_client.search_items
 ```
+
+## Evaluation
+
+`evaluation.xml` contains 10 read-only questions designed for LLM evaluation harnesses. Questions target stable response properties (shape, field values, filter behaviour) rather than specific listings, because eBay inventory changes constantly. Each question has a single verifiable string answer.
 
 ## License
 
