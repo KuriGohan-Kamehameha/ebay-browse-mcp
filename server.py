@@ -9,6 +9,29 @@ from mcp.server.fastmcp import FastMCP
 
 from ebay_client import ENV, MARKETPLACE, get_item, search_items
 
+# Version / changelog discipline (cross-pollination audit fc63689, t16). This
+# FastMCP release derives serverInfo.version from package metadata and its
+# constructor takes no version= kwarg, so the module owns the number instead.
+# CHANGELOG:
+#   0.2.0  cap the verbatim HTML description in get_item_details (t6 output cap);
+#          record module __version__ + changelog (t16).
+#   0.1.0  initial: search_ebay + get_item_details over the Browse API.
+__version__ = "0.2.0"
+
+# eBay returns the item description as a raw HTML blob that can run to tens of
+# KB (full seller listing markup). Relaying it verbatim into a tool result can
+# blow the caller's context, so cap it with an explicit truncation marker — the
+# adb-ui / kudzu MAX_OUT_BYTES pattern applied to the one unbounded field.
+MAX_DESCRIPTION_CHARS = 20000
+
+
+def _cap(text: Optional[str], limit: int = MAX_DESCRIPTION_CHARS) -> Optional[str]:
+    """Truncate an over-long string with a visible marker; pass None through."""
+    if not isinstance(text, str) or len(text) <= limit:
+        return text
+    return text[:limit] + "\n…[truncated {} chars]".format(len(text) - limit)
+
+
 mcp = FastMCP("ebay-browse")
 
 
@@ -134,7 +157,7 @@ def get_item_details(item_id: str, fieldgroups: Optional[str] = None) -> dict:
         "title": raw.get("title"),
         "subtitle": raw.get("subtitle"),
         "short_description": raw.get("shortDescription"),
-        "description": raw.get("description"),
+        "description": _cap(raw.get("description")),
         "price": price.get("value"),
         "currency": price.get("currency"),
         "condition": raw.get("condition"),
