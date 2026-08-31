@@ -28,6 +28,22 @@ ITEM_URL = f"{BASE}/buy/browse/v1/item"
 # In-memory token cache (process-local)
 _token_cache = {"value": None, "expires_at": 0.0}
 
+# Short-TTL search-result memo (cross-pollination audit fc63689, t15). Same
+# shape as the token cache above / kudzu-mcp's doorCache: a bounded,
+# module-scope dict keyed by the exact call signature, with a timestamp per
+# entry so a stale hit is just an expired dict entry, never a live one. A
+# short TTL (not the long-lived token TTL) because search results legitimately
+# go stale as listings sell/relist; this only absorbs the common case of an
+# agent re-issuing the same search seconds apart (e.g. retrying after a
+# tool-result parse miss) without doubling eBay API quota burn.
+SEARCH_CACHE_TTL_S = 30
+SEARCH_CACHE_MAX_ENTRIES = 64  # amplification cap: bound memory, not just CPU
+_search_cache: dict = {}
+
+
+def _search_cache_key(query: str, limit: int, filter_expr: Optional[str], sort: Optional[str]):
+    return (query, limit, filter_expr, sort)
+
 
 def _get_access_token() -> str:
     """Fetch an OAuth application access token via client credentials flow.
@@ -83,7 +99,14 @@ def search_items(
     Returns:
         Raw Browse API response dict (itemSummaries, total, etc).
     """
-    params = {"q": query, "limit": max(1, min(limit, 200))}
+    capped_limit = max(1, min(limit, 200))
+    key = _search_cache_key(query, capped_limit, filter_expr, sort)
+    now = time.time()
+    hit = _search_cache.get(key)
+    if hit and now - hit[1] < SEARCH_CACHE_TTL_S:
+        return hit[0]
+
+    params = {"q": query, "limit": capped_limit}
     if filter_expr:
         params["filter"] = filter_expr
     if sort:
@@ -104,7 +127,20 @@ def search_items(
         raise RuntimeError(
             f"Search failed ({response.status_code}): {response.text[:500]}"
         )
-    return response.json()
+    result = response.json()
+
+    # Evict expired entries before inserting so the dict can't grow unbounded
+    # under a long-lived process even if the cap below is never hit exactly.
+    for k in [k for k, (_, ts) in _search_cache.items() if now - ts >= SEARCH_CACHE_TTL_S]:
+        del _search_cache[k]
+    if len(_search_cache) >= SEARCH_CACHE_MAX_ENTRIES:
+        # Oldest-first eviction on overflow (cap on adversarial/high-cardinality
+        # query fan-out, not just normal TTL expiry).
+        oldest_key = min(_search_cache, key=lambda k: _search_cache[k][1])
+        del _search_cache[oldest_key]
+    _search_cache[key] = (result, now)
+
+    return result
 
 
 def get_item(item_id: str, fieldgroups: Optional[str] = None) -> dict:

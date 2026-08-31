@@ -13,10 +13,15 @@ from ebay_client import ENV, MARKETPLACE, get_item, search_items
 # FastMCP release derives serverInfo.version from package metadata and its
 # constructor takes no version= kwarg, so the module owns the number instead.
 # CHANGELOG:
+#   0.3.0  short-TTL (30s) memo on search_ebay keyed on (query, limit,
+#          filter_expr, sort), bounded to 64 entries with oldest-first
+#          eviction — doorCache pattern (t15); get_item_details already had
+#          the OAuth token cache but no result-level memo of its own, left
+#          unmemoized since item detail lookups are typically one-shot.
 #   0.2.0  cap the verbatim HTML description in get_item_details (t6 output cap);
 #          record module __version__ + changelog (t16).
 #   0.1.0  initial: search_ebay + get_item_details over the Browse API.
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 # eBay returns the item description as a raw HTML blob that can run to tens of
 # KB (full seller listing markup). Relaying it verbatim into a tool result can
